@@ -14,6 +14,7 @@ export default function Home() {
   const [source, setSource] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [nextUpdate, setNextUpdate] = useState(null);
+  const [currencyInfo, setCurrencyInfo] = useState({});
 
   useEffect(() => {
     async function fetchRates() {
@@ -34,8 +35,29 @@ export default function Home() {
         setLoading(false);
       }
     }
+
     fetchRates();
+
+    async function fetchCurrencyInfo() {
+      const res = await fetch("/currencies.json");
+      const array = await res.json();
+      
+      const map = {};
+      array.forEach((currency) => {
+        map[currency.code] = currency;
+      });
+
+      setCurrencyInfo(map);
+    }
+
+    fetchCurrencyInfo();
   }, []);
+
+  function getCurrencyLabel(code) {
+    const info = currencyInfo[code];
+    if (!info) return code;
+    return `${code} - ${info.name}`;
+  }
 
   async function handleConvert() {
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
@@ -83,15 +105,26 @@ export default function Home() {
         <label className="block text-sm font-medium text-gray-700 mb-1">
           From
         </label>
-        <select
-          value={fromCurrency}
-          onChange={(e) => { setFromCurrency(e.target.value); setResult(null); }}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {currencies.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
+        <div className="flex items-center gap-3 mb-4">
+          {currencyInfo[fromCurrency] && (
+            <img
+              src={currencyInfo[fromCurrency].flag}
+              alt={fromCurrency}
+              className="w-8 h-6 rounded-sm object-cover shrink-0"
+            />
+          )}
+          <select
+            value={fromCurrency}
+            onChange={(e) => { setFromCurrency(e.target.value); setResult(null); }}
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {currencies.map((c) => (
+              <option key={c} value={c}>
+                {getCurrencyLabel(c)}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Amount
@@ -114,15 +147,26 @@ export default function Home() {
         <label className="block text-sm font-medium text-gray-700 mb-1">
           To
         </label>
-        <select
-          value={toCurrency}
-          onChange={(e) => { setToCurrency(e.target.value); setResult(null); }}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {currencies.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
+        <div className="flex items-center gap-3 mb-4">
+          {currencyInfo[toCurrency] && (
+            <img
+              src={currencyInfo[toCurrency].flag}
+              alt={toCurrency}
+              className="w-8 h-6 rounded-sm object-cover shrink-0"
+            />
+          )}
+          <select
+            value={toCurrency}
+            onChange={(e) => { setToCurrency(e.target.value); setResult(null); }}
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {currencies.map((c) => (
+              <option key={c} value={c}>
+                {getCurrencyLabel(c)}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <button
           onClick={handleConvert}
