@@ -15,6 +15,14 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [nextUpdate, setNextUpdate] = useState(null);
   const [currencyInfo, setCurrencyInfo] = useState({});
+  const [isFromOpen, setIsFromOpen] = useState(false);
+  const [isToOpen, setIsToOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredCurrencies = currencies.filter((c) => {
+    const label = getCurrencyLabel(c).toLowerCase();
+    return label.includes(searchQuery.toLowerCase());
+  });
 
   useEffect(() => {
     async function fetchRates() {
@@ -62,7 +70,7 @@ export default function Home() {
 
     if (!amountNum || amountNum.trim() === "") {
       setResult(null);
-      return;r
+      return;
     }
 
     if (isNaN(amountNum) || Number(amountNum) <= 0) {
@@ -115,28 +123,64 @@ export default function Home() {
           </p>
         )}
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          From
-        </label>
-        <div className="flex items-center gap-3 mb-4">
-          {currencyInfo[fromCurrency] && (
-            <img
-              src={currencyInfo[fromCurrency].flag}
-              alt={fromCurrency}
-              className="w-8 h-6 rounded-sm object-cover shrink-0"
+        <div className="relative mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+
+          <div
+            onClick={() => setIsFromOpen(!isFromOpen)}
+            className="flex items-center gap-3 border border-gray-300 rounded-lg px-4 py-3 cursor-pointer bg-white hover:border-green-500 transition"
+          >
+            {currencyInfo[fromCurrency] && (
+              <img src={currencyInfo[fromCurrency].flag} alt="{fromCurrency}" className="w-8 h-6 rounded-sm object-cover" />
+            )}
+            <span className="flex-1">{getCurrencyLabel(fromCurrency)}</span>
+            <span className="text-gray-400">▼</span>
+          </div>
+
+          {isFromOpen && (
+            <div 
+              className="fixed inset-0 z-40 bg-transparent" 
+              onClick={() => {
+                setIsFromOpen(false);
+                setSearchQuery("");
+              }}
             />
           )}
-          <select
-            value={fromCurrency}
-            onChange={(e) => { setFromCurrency(e.target.value); setResult(null); }}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {currencies.map((c) => (
-              <option key={c} value={c}>
-                {getCurrencyLabel(c)}
-              </option>
-            ))}
-          </select>
+
+          {isFromOpen && (
+            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-hidden flex flex-col">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Search..."
+                className="p-3 border-b border-gray-100 focus:outline-none sticky top-0 bg-white"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+
+              <div className="overflow-y-auto">
+                {filteredCurrencies.map((c) => (
+                  <div
+                    key={c}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-green-50 cursor-pointer transition"
+                    onClick={() => {
+                      setFromCurrency(c);
+                      setIsFromOpen(false);
+                      setSearchQuery("");
+                    }}
+                  >
+                    {currencyInfo[c] && <img src={currencyInfo[c].flag} alt={c} className="w-6 h-4 rounded-sm" />}
+                    <span className={fromCurrency === c ? "font-bold text-green-700" : ""}>
+                      {getCurrencyLabel(c)}
+                    </span>
+                  </div>
+                ))}
+                {filteredCurrencies.length === 0 && (
+                  <div className="p-4 text-gray-500 text-sm">No currencies found...</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -173,28 +217,64 @@ export default function Home() {
           Switch
         </button>
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          To
-        </label>
-        <div className="flex items-center gap-3 mb-4">
-          {currencyInfo[toCurrency] && (
-            <img
-              src={currencyInfo[toCurrency].flag}
-              alt={toCurrency}
-              className="w-8 h-6 rounded-sm object-cover shrink-0"
+        <div className="relative mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+
+          <div
+            onClick={() => setIsToOpen(!isToOpen)}
+            className="flex items-center gap-3 border border-gray-300 rounded-lg px-4 py-3 cursor-pointer bg-white hover:border-green-500 transition"
+          >
+            {currencyInfo[toCurrency] && (
+              <img src={currencyInfo[toCurrency].flag} alt="{toCurrency}" className="w-8 h-6 rounded-sm object-cover" />
+            )}
+            <span className="flex-1">{getCurrencyLabel(toCurrency)}</span>
+            <span className="text-gray-400">▼</span>
+          </div>
+
+          {isToOpen && (
+            <div 
+              className="fixed inset-0 z-40 bg-transparent" 
+              onClick={() => {
+                setIsToOpen(false);
+                setSearchQuery("");
+              }}
             />
           )}
-          <select
-            value={toCurrency}
-            onChange={(e) => { setToCurrency(e.target.value); setResult(null); }}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {currencies.map((c) => (
-              <option key={c} value={c}>
-                {getCurrencyLabel(c)}
-              </option>
-            ))}
-          </select>
+
+          {isToOpen && (
+            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-hidden flex flex-col">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Search..."
+                className="p-3 border-b border-gray-100 focus:outline-none sticky top-0 bg-white"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+
+              <div className="overflow-y-auto">
+                {filteredCurrencies.map((c) => (
+                  <div
+                    key={c}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-green-50 cursor-pointer transition"
+                    onClick={() => {
+                      setToCurrency(c);
+                      setIsToOpen(false);
+                      setSearchQuery("");
+                    }}
+                  >
+                    {currencyInfo[c] && <img src={currencyInfo[c].flag} alt={c} className="w-6 h-4 rounded-sm" />}
+                    <span className={toCurrency === c ? "font-bold text-green-700" : ""}>
+                      {getCurrencyLabel(c)}
+                    </span>
+                  </div>
+                ))}
+                {filteredCurrencies.length === 0 && (
+                  <div className="p-4 text-gray-500 text-sm">No currencies found...</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -208,7 +288,7 @@ export default function Home() {
               {formatNumber(result)} {toCurrency}
             </p>
             <p className="text-gray-400 text-sm mt-2">
-              {amount} {fromCurrency} → {formatNumber(result)} {toCurrency}
+              {amount} {toCurrency} → {formatNumber(result)} {toCurrency}
             </p>
           </div>
         )}
