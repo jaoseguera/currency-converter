@@ -41,7 +41,7 @@ export default function Home() {
     async function fetchCurrencyInfo() {
       const res = await fetch("/currencies.json");
       const array = await res.json();
-      
+
       const map = {};
       array.forEach((currency) => {
         map[currency.code] = currency;
@@ -53,24 +53,37 @@ export default function Home() {
     fetchCurrencyInfo();
   }, []);
 
+  useEffect(() => {
+    const amountNum = amount.replace(/,/g, "");
+
+    setError(null);
+
+    if (!rates) return;
+
+    if (!amountNum || amountNum.trim() === "") {
+      setResult(null);
+      return;r
+    }
+
+    if (isNaN(amountNum) || Number(amountNum) <= 0) {
+      setResult(null);
+      setError("Invalid amount.");
+      return;
+    }
+    const amountInBase = Number(amountNum) / rates[fromCurrency];
+    const converted = (amountInBase * rates[toCurrency]).toFixed(2);
+    setResult(converted);
+  }, [amount, fromCurrency, toCurrency, rates]);
+
   function getCurrencyLabel(code) {
     const info = currencyInfo[code];
     if (!info) return code;
     return `${code} - ${info.name}`;
   }
 
-  async function handleConvert() {
-    if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      setError("Invalid amount.");
-      return;
-    }
-
-    if (!rates) return;
-    setError(null);
-
-    const amountToConvert = Number(amount) / rates[fromCurrency];
-    const converted = (amountToConvert * rates[toCurrency]).toFixed(2);
-    setResult(converted);
+  function formatNumber(value) {
+    if (!value) value = 0;
+    return Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function handleSwitch() {
@@ -130,16 +143,32 @@ export default function Home() {
           Amount
         </label>
         <input
-          type="number"
+          type="text"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder="z.B. 100"
+          onBlur={() => {
+            if (!amount || isNaN(amount.replace(/,/g, "")) || Number(amount.replace(/,/g, "")) <= 0) {
+              setAmount("1.00");
+            } else {
+              setAmount(formatNumber(amount.replace(/,/g, "")));
+            }
+          }}
+          onFocus={(e) => {
+            const rawValue = amount.replace(/,/g, "");
+            setAmount(rawValue);
+          }}
           className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
+        {error && (
+          <p className="text-red-500 text-xs mt-[-12px] mb-4 ml-1 italic font-medium">
+            {error}
+          </p>
+        )}
+
         <button
           onClick={handleSwitch}
-          className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 rounded-lg mb-4 transition"
+          className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 rounded-lg mb-4 transition"
         >
           Switch
         </button>
@@ -168,13 +197,6 @@ export default function Home() {
           </select>
         </div>
 
-        <button
-          onClick={handleConvert}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg text-lg transition"
-        >
-          Convert
-        </button>
-
         {error && (
           <p className="mt-4 text-red-500 text-center">{error}</p>
         )}
@@ -183,10 +205,10 @@ export default function Home() {
           <div className="mt-6 bg-blue-50 rounded-xl p-5 text-center">
             <p className="text-gray-500 text-sm mb-1">Result</p>
             <p className="text-3xl font-bold text-blue-700">
-              {result} {toCurrency}
+              {formatNumber(result)} {toCurrency}
             </p>
             <p className="text-gray-400 text-sm mt-2">
-              {amount} {fromCurrency} → {result} {toCurrency}
+              {amount} {fromCurrency} → {formatNumber(result)} {toCurrency}
             </p>
           </div>
         )}
