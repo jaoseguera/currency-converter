@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react";
+import CurrencyDropdown from "./components/CurrencyDropdown";
 
 export default function Home() {
   const [amount, setAmount] = useState("1.0");
@@ -18,11 +19,7 @@ export default function Home() {
   const [isFromOpen, setIsFromOpen] = useState(false);
   const [isToOpen, setIsToOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredCurrencies = currencies.filter((c) => {
-    const label = getCurrencyLabel(c).toLowerCase();
-    return label.includes(searchQuery.toLowerCase());
-  });
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     async function fetchRates() {
@@ -89,6 +86,11 @@ export default function Home() {
     return `${code} - ${info.name}`;
   }
 
+  const filteredCurrencies = currencies.filter((c) => {
+    const label = getCurrencyLabel(c).toLowerCase();
+    return label.includes(searchQuery.toLowerCase());
+  });
+
   function formatNumber(value) {
     if (!value) value = 0;
     return Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -124,63 +126,13 @@ export default function Home() {
         )}
 
         <div className="relative mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
-
-          <div
-            onClick={() => setIsFromOpen(!isFromOpen)}
-            className="flex items-center gap-3 border border-gray-300 rounded-lg px-4 py-3 cursor-pointer bg-white hover:border-green-500 transition"
-          >
-            {currencyInfo[fromCurrency] && (
-              <img src={currencyInfo[fromCurrency].flag} alt="{fromCurrency}" className="w-8 h-6 rounded-sm object-cover" />
-            )}
-            <span className="flex-1">{getCurrencyLabel(fromCurrency)}</span>
-            <span className="text-gray-400">▼</span>
-          </div>
-
-          {isFromOpen && (
-            <div 
-              className="fixed inset-0 z-40 bg-transparent" 
-              onClick={() => {
-                setIsFromOpen(false);
-                setSearchQuery("");
-              }}
-            />
-          )}
-
-          {isFromOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-hidden flex flex-col">
-              <input
-                autoFocus
-                type="text"
-                placeholder="Search..."
-                className="p-3 border-b border-gray-100 focus:outline-none sticky top-0 bg-white"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-
-              <div className="overflow-y-auto">
-                {filteredCurrencies.map((c) => (
-                  <div
-                    key={c}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-green-50 cursor-pointer transition"
-                    onClick={() => {
-                      setFromCurrency(c);
-                      setIsFromOpen(false);
-                      setSearchQuery("");
-                    }}
-                  >
-                    {currencyInfo[c] && <img src={currencyInfo[c].flag} alt={c} className="w-6 h-4 rounded-sm" />}
-                    <span className={fromCurrency === c ? "font-bold text-green-700" : ""}>
-                      {getCurrencyLabel(c)}
-                    </span>
-                  </div>
-                ))}
-                {filteredCurrencies.length === 0 && (
-                  <div className="p-4 text-gray-500 text-sm">No currencies found...</div>
-                )}
-              </div>
-            </div>
-          )}
+          <CurrencyDropdown
+            label="From"
+            value={fromCurrency}
+            onChange={setFromCurrency}
+            currencies={currencies}
+            currencyInfo={currencyInfo}
+          />
         </div>
 
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -190,6 +142,11 @@ export default function Home() {
           type="text"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.currentTarget.blur();
+            }
+          }}
           onBlur={() => {
             if (!amount || isNaN(amount.replace(/,/g, "")) || Number(amount.replace(/,/g, "")) <= 0) {
               setAmount("1.00");
@@ -201,7 +158,10 @@ export default function Home() {
             const rawValue = amount.replace(/,/g, "");
             setAmount(rawValue);
           }}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={`w-full border rounded-lg px-4 py-3 text-lg mb-4 focus:outline-none focus:ring-2 ${error
+            ? "border-red-500 focus:ring-red-500 bg-red-50"
+            : "border-gray-300 focus:ring-green-500"
+            }`}
         />
 
         {error && (
@@ -217,65 +177,13 @@ export default function Home() {
           Switch
         </button>
 
-        <div className="relative mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
-
-          <div
-            onClick={() => setIsToOpen(!isToOpen)}
-            className="flex items-center gap-3 border border-gray-300 rounded-lg px-4 py-3 cursor-pointer bg-white hover:border-green-500 transition"
-          >
-            {currencyInfo[toCurrency] && (
-              <img src={currencyInfo[toCurrency].flag} alt="{toCurrency}" className="w-8 h-6 rounded-sm object-cover" />
-            )}
-            <span className="flex-1">{getCurrencyLabel(toCurrency)}</span>
-            <span className="text-gray-400">▼</span>
-          </div>
-
-          {isToOpen && (
-            <div 
-              className="fixed inset-0 z-40 bg-transparent" 
-              onClick={() => {
-                setIsToOpen(false);
-                setSearchQuery("");
-              }}
-            />
-          )}
-
-          {isToOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-hidden flex flex-col">
-              <input
-                autoFocus
-                type="text"
-                placeholder="Search..."
-                className="p-3 border-b border-gray-100 focus:outline-none sticky top-0 bg-white"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-
-              <div className="overflow-y-auto">
-                {filteredCurrencies.map((c) => (
-                  <div
-                    key={c}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-green-50 cursor-pointer transition"
-                    onClick={() => {
-                      setToCurrency(c);
-                      setIsToOpen(false);
-                      setSearchQuery("");
-                    }}
-                  >
-                    {currencyInfo[c] && <img src={currencyInfo[c].flag} alt={c} className="w-6 h-4 rounded-sm" />}
-                    <span className={toCurrency === c ? "font-bold text-green-700" : ""}>
-                      {getCurrencyLabel(c)}
-                    </span>
-                  </div>
-                ))}
-                {filteredCurrencies.length === 0 && (
-                  <div className="p-4 text-gray-500 text-sm">No currencies found...</div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <CurrencyDropdown
+          label="To"
+          value={toCurrency}
+          onChange={setToCurrency}
+          currencies={currencies}
+          currencyInfo={currencyInfo}
+        />
 
         {error && (
           <p className="mt-4 text-red-500 text-center">{error}</p>
@@ -288,7 +196,7 @@ export default function Home() {
               {formatNumber(result)} {toCurrency}
             </p>
             <p className="text-gray-400 text-sm mt-2">
-              {amount} {toCurrency} → {formatNumber(result)} {toCurrency}
+              {amount} {fromCurrency} → {formatNumber(result)} {toCurrency}
             </p>
           </div>
         )}
